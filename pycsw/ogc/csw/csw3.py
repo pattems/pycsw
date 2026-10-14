@@ -30,7 +30,6 @@
 
 import os
 import sys
-import cgi
 from time import time
 from urllib.parse import quote, unquote
 from io import StringIO

@@ -32,7 +32,6 @@
 
 import os
 import sys
-import cgi
 from urllib.parse import quote, unquote
 from io import StringIO
 from pycsw.core.etree import etree

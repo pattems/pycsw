@@ -95,6 +95,9 @@ def setup_logger(config=None):
     LOGGER.info('Logging initialized (level: %s).', loglevel)
 
     if loglevel == 'DEBUG':  # turn on CGI debugging
-        LOGGER.info('CGI debugging enabled.')
-        import cgitb
-        cgitb.enable()
+        try:
+            import cgitb  # removed in Python 3.13
+            cgitb.enable()
+            LOGGER.info('CGI debugging enabled.')
+        except ImportError:
+            pass
