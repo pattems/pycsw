@@ -194,12 +194,16 @@ class Csw(object):
         if self.config.has_option('repository', 'mappings'):
             # override default repository mappings
             try:
-                import importlib
+                import importlib.util
                 module = self.config.get('repository', 'mappings')
                 if os.sep in module:  # filepath
                     modulename = '%s' % os.path.splitext(module)[0].replace(
                         os.sep, '.')
-                    mappings = importlib(modulename)
+                    spec = importlib.util.spec_from_file_location(
+                        modulename, module)
+                    mappings = importlib.util.module_from_spec(spec)
+                    sys.modules[modulename] = mappings
+                    spec.loader.exec_module(mappings)
                 else:  # dotted name
                     mappings = __import__(module, fromlist=[''])
                 LOGGER.info('Loading custom repository mappings '
