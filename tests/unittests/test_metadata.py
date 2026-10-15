@@ -28,9 +28,13 @@
 # =================================================================
 """Unit tests for pycsw.core.metadata"""
 
+import os
+
 import pytest
 
 from pycsw.core import metadata
+from pycsw.core.config import StaticContext
+from pycsw.core.etree import etree
 
 pytestmark = pytest.mark.unit
 
@@ -53,3 +57,48 @@ def test_bbox_from_polygons_invalid():
     bboxes = "stuff"
     with pytest.raises(RuntimeError):
         metadata.bbox_from_polygons(bboxes)
+
+
+class _Dataset(object):
+    pass
+
+
+class _Repository(object):
+    dataset = _Dataset
+
+
+ISO_DATA = os.path.join(os.path.dirname(__file__), '..', 'functionaltests',
+                        'suites', 'apiso', 'data')
+
+
+def _parse_iso(record):
+    context = StaticContext()
+    exml = etree.fromstring(record, context.parser)
+    recobj = metadata._parse_iso(context, _Repository(), exml)
+    mappings = context.md_core_model['mappings']
+    return lambda name: getattr(recobj, mappings[name], None)
+
+
+@pytest.mark.parametrize("filename, title, topic, servicetype", [
+    ("T_aerfo_RAS_1991_GR800P001800000012.xml", "Aerial Photos",
+     "geoscientificInformation", ""),
+    ("3e9a8c05.xml", "test Title", None, "view"),
+    ("pacioos-NS06agg.xml", "PacIOOS Nearshore Sensor 06: Pohnpei, Micronesia",
+     "climatologyMeteorologyAtmosphere", "THREDDS OPeNDAP"),
+])
+def test_parse_iso(filename, title, topic, servicetype):
+    with open(os.path.join(ISO_DATA, filename), 'rb') as fh:
+        value = _parse_iso(fh.read())
+    assert value('pycsw:Title') == title
+    assert value('pycsw:TopicCategory') == topic
+    assert value('pycsw:ServiceType') == servicetype
+
+
+def test_parse_iso_no_identification():
+    value = _parse_iso(
+        b'<gmd:MD_Metadata xmlns:gmd="http://www.isotc211.org/2005/gmd" '
+        b'xmlns:gco="http://www.isotc211.org/2005/gco">'
+        b'<gmd:fileIdentifier><gco:CharacterString>no-identification'
+        b'</gco:CharacterString></gmd:fileIdentifier></gmd:MD_Metadata>')
+    assert value('pycsw:Identifier') == 'no-identification'
+    assert value('pycsw:BoundingBox') is None
