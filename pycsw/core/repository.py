@@ -38,9 +38,13 @@ import os
 
 from shapely.wkt import loads
 try:
-    from shapely.errors import ReadingError
-except:
-    from shapely.geos import ReadingError
+    # Shapely >= 1.8; ReadingError is a deprecated alias of it in 2.x
+    from shapely.errors import ShapelyError as ReadingError
+except ImportError:
+    try:
+        from shapely.errors import ReadingError
+    except ImportError:
+        from shapely.geos import ReadingError
 
 from sqlalchemy import create_engine, func, __version__, select
 from sqlalchemy.sql import text
