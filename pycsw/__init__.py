@@ -30,6 +30,10 @@
 #
 # =================================================================
 
-import pkg_resources
-
-__version__ = pkg_resources.require("pycsw")[0].version
+try:
+    from importlib.metadata import version as _version
+except ImportError:  # Python < 3.8
+    import pkg_resources
+    __version__ = pkg_resources.require("pycsw")[0].version
+else:
+    __version__ = _version("pycsw")
