@@ -31,6 +31,8 @@
 import pytest
 
 from pycsw.core import metadata
+from pycsw.core.config import StaticContext
+from pycsw.core.etree import etree
 
 pytestmark = pytest.mark.unit
 
@@ -53,3 +55,33 @@ def test_bbox_from_polygons_invalid():
     bboxes = "stuff"
     with pytest.raises(RuntimeError):
         metadata.bbox_from_polygons(bboxes)
+
+
+class _Dataset:
+    pass
+
+
+class _Repository:
+    dataset = _Dataset
+
+
+@pytest.mark.parametrize("record", [
+    b'<gmd:MD_Metadata xmlns:gmd="http://www.isotc211.org/2005/gmd" '
+    b'xmlns:gco="http://www.isotc211.org/2005/gco">'
+    b'<gmd:fileIdentifier><gco:CharacterString>no-identification'
+    b'</gco:CharacterString></gmd:fileIdentifier></gmd:MD_Metadata>',
+    b'<mdb:MD_Metadata xmlns:mdb="http://standards.iso.org/iso/19115/-3/mdb/2.0" '
+    b'xmlns:mcc="http://standards.iso.org/iso/19115/-3/mcc/1.0" '
+    b'xmlns:gco="http://standards.iso.org/iso/19115/-3/gco/1.0">'
+    b'<mdb:metadataIdentifier><mcc:MD_Identifier><mcc:code>'
+    b'<gco:CharacterString>no-identification</gco:CharacterString>'
+    b'</mcc:code></mcc:MD_Identifier></mdb:metadataIdentifier>'
+    b'</mdb:MD_Metadata>',
+])
+def test_parse_iso_no_identification(record):
+    context = StaticContext()
+    exml = etree.fromstring(record, context.parser)
+    recobj = metadata._parse_iso(context, _Repository(), exml)
+    mappings = context.md_core_model['mappings']
+    assert getattr(recobj, mappings['pycsw:Identifier']) == 'no-identification'
+    assert getattr(recobj, mappings['pycsw:BoundingBox']) is None

@@ -1388,7 +1388,7 @@ def _parse_iso(context, repos, exml):
     else:
         md = MD_Metadata(exml)
 
-    md_identification = md.identification[0]
+    md_identification = md.identification[0] if md.identification else None
 
     _set(context, recobj, 'pycsw:Identifier', md.identifier)
     _set(context, recobj, 'pycsw:Typename', f'{mdmeta_ns}:MD_Metadata')
